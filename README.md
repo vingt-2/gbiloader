@@ -1,13 +1,8 @@
-# Dolaunch
-Set of dol launching tools for GameCube
+# gbiloader
+Tool to automate launching extrem's Game Boy Interface software.
 
-This tools are based on the dol loading code used in swiss by emu_kidid: https://github.com/emukidid/swiss-gc
+This is a fork of Dolaunch by suloku, specifically the BrosexecConf tool. It's heavily modified to target GBI specifically.
 
-· Brosexec: This is a simple dol that will load autoexec.dol from the root of a SD card in a SDGecko adapter. It's main purpose is to be used with the Home Bros. Exploit, as a way to boot homebrew on unmodified consoles. One of its goals is to keep used space in the memory card as low as possible.
-	- Check the Home Bros. exploit here: http://www.gc-forever.com/forums/viewtopic.php?f=38&t=3023
+The goal is to allow you to automatically start GBI when powering on the gamecube, but at the same time support commandline arguments for GBI. Currently most people who want to do this either boot GBI directly, or set Swiss to autostart GBI, but neither of these options support passing commandline arguments to GBI.
 
-· Brosexecconf: this is a simple configurable dol launcher, the configuration file can assing a dol to each button. Supports a timer to autoboot a default dol after a configurable amount of time passes. Also supports passing command line arguments to loaded dol files in the form of .cli files.
-	- A text only version and a version supporting customizable png background are available (on screen text can be disabled so the background can be used as splash screen for autoboot for example).
-	- Uses lib PNGU by frontier: http://wiibrew.org/wiki/PNGU
-
-· McLoader: this simple dol can launch any dol present in a memory card created with dol2gci. It¡s main use would be for those not having an SDGecko adapter.
+The design goal is to, by default, simply launch GBI immediately from an SD card using a .cli file for GBI config. A splash screen will be presented while GBI loads, and you will be able to hold down the "L" button while gbiloader starts to view a menu to select between the three editions of GBI (GBI, GBI-LL, and GBI-ULL), each with their own corresponding .cli file. gbiloader should remember your previous selection, so that the next time you boot the gamecube, it should start the same edition of GBI as last time.
