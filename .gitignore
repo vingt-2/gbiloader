@@ -1,12 +1,15 @@
-brosexec/build/
-brosexec/actionreplay/SDLOADER.BIN
-brosexecconf/build/
-brosexecconf/background/
-mcloader/build/
+build/
+background/
 release/
+x64/
+
+gbiloader.VC.db
+gbiloader.VC.VC.opendb
+gbiloader.vcxproj.user
 
 
 *.dol
 *.elf
 *.o
 *.gci
+*.suo
