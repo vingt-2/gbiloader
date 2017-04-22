@@ -3,6 +3,10 @@ Tool to automate launching extrem's Game Boy Interface software.
 
 This is a fork of Dolaunch by suloku, specifically the BrosexecConf tool. It's heavily modified to target GBI specifically.
 
-The goal is to allow you to automatically start GBI when powering on the gamecube, but at the same time support commandline arguments for GBI. Currently most people who want to do this either boot GBI directly, or set Swiss to autostart GBI, but neither of these options support passing commandline arguments to GBI.
+This tool allowas you to automatically start GBI when powering on the gamecube, and to support command-line arguments while doing so. Currently most people who want to start GBI automatically either boot GBI directly, or set Swiss to autostart GBI, but neither of these options support passing commandline arguments to GBI.
 
-The design goal is to, by default, simply launch GBI immediately from an SD card using a .cli file for GBI config. A splash screen will be presented while GBI loads, and you will be able to hold down the "L" button while gbiloader starts to view a menu to select between the three editions of GBI (GBI, GBI-LL, and GBI-ULL), each with their own corresponding .cli file. gbiloader should remember your previous selection, so that the next time you boot the gamecube, it should start the same edition of GBI as last time.
+Each version of GBI can have their own .CLI file associated with it, so you can have different settings for each version.
+
+By default, it will load GBI-LL. Hold Y while it starts to get a menu to select which version of GBI to load. The splash/loading screen will change accordingly. In the future, gbiloader will save this selection back to its config file so that your selection will become the new default.
+
+More extensive documentation will be added later.
