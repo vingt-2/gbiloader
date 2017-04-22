@@ -144,7 +144,7 @@ int readparseconf(char * config)
 
 	if (pFile == NULL)
 	{
-		printf("Error opening %s\n", config);
+		printf("\x1b[5;6H Error opening %s\n", config);
 		return -1;
 	}
 	else
@@ -195,7 +195,7 @@ int readparseconf(char * config)
 
 void waitA()
 {
-	printf("Press A to continue\n");
+	printf("\x1b[5;6H Press A to continue\n");
 
 	while (1)
 	{
@@ -268,20 +268,20 @@ int main(int argc, char *argv[])
 	{
 		if (strlen(img_def) > 0)
 		{
-			printf("PNGU_SelectFileFromDevice failed!\n");
+			printf("\x1b[5;6H PNGU_SelectFileFromDevice failed!\n");
 		}
 	}
 	else
 	{
 		if (PNGU_GetImageProperties(ctx, &imgProp) != PNGU_OK)
 		{
-			printf("PNGU_GetImageProperties failed!\n");
+			printf("\x1b[5;6H PNGU_GetImageProperties failed!\n");
 		}
 		else
 		{
 			if (PNGU_DecodeToYCbYCr(ctx, imgProp.imgWidth, imgProp.imgHeight, xfb, 640 - imgProp.imgWidth) != PNGU_OK)
 			{
-				printf("PNGU_DecodeToYCbYCr failed!\n");
+				printf("\x1b[5;6H PNGU_DecodeToYCbYCr failed!\n");
 			}
 		}
 
@@ -307,7 +307,7 @@ int main(int argc, char *argv[])
 		if (buttonsDown & PAD_TRIGGER_Z) {
 			//strcpy(bootpath, buttonZT);
 			boot = 1;
-			printf("BOOTING...\n");
+			printf("\x1b[5;6H BOOTING...\n");
 		}
 
 		//if (timer >= 0) { if (difftime(now, boottime) >= timer) boot = 1; }
@@ -418,7 +418,7 @@ int main(int argc, char *argv[])
 
 					//We shouldn't reach this point
 					if (dol != NULL) free(dol);
-					printf("Not a valid dol File! ");
+					printf("\x1b[5;6H Not a valid dol File! ");
 				}
 
 				fclose(fp);

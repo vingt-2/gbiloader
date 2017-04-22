@@ -14,3 +14,7 @@ gbiloader.elf.map
 *.o
 *.gci
 *.suo
+
+!gbi.dol
+!gbi-ll.dol
+!gbi-ull.dol
