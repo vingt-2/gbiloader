@@ -215,6 +215,38 @@ void waitA()
 	}
 }
 
+void RenderPNG()
+{
+	VIDEO_ClearFrameBuffer(rmode, xfb, COLOR_BLACK);
+
+	PNGUPROP imgProp;
+	IMGCTX ctx;
+
+	if (!(ctx = PNGU_SelectImageFromDevice(img_def)))
+	{
+		if (strlen(img_def) > 0)
+		{
+			printf("\x1b[5;6H PNGU_SelectFileFromDevice failed!\n");
+		}
+	}
+	else
+	{
+		if (PNGU_GetImageProperties(ctx, &imgProp) != PNGU_OK)
+		{
+			printf("\x1b[5;6H PNGU_GetImageProperties failed!\n");
+		}
+		else
+		{
+			if (PNGU_DecodeToYCbYCr(ctx, imgProp.imgWidth, imgProp.imgHeight, xfb, 640 - imgProp.imgWidth) != PNGU_OK)
+			{
+				printf("\x1b[5;6H PNGU_DecodeToYCbYCr failed!\n");
+			}
+		}
+
+		PNGU_ReleaseImageContext(ctx);
+	}
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -255,65 +287,70 @@ int main(int argc, char *argv[])
 		waitA();
 	}
 
-	char bootpath[256];
-	char clipath[256];
-	strcpy(bootpath, dol_def);
+	RenderPNG();
 
-	VIDEO_ClearFrameBuffer(rmode, xfb, COLOR_BLACK);
-
-	PNGUPROP imgProp;
-	IMGCTX ctx;
-
-	if (!(ctx = PNGU_SelectImageFromDevice(img_def)))
-	{
-		if (strlen(img_def) > 0)
-		{
-			printf("\x1b[5;6H PNGU_SelectFileFromDevice failed!\n");
-		}
-	}
-	else
-	{
-		if (PNGU_GetImageProperties(ctx, &imgProp) != PNGU_OK)
-		{
-			printf("\x1b[5;6H PNGU_GetImageProperties failed!\n");
-		}
-		else
-		{
-			if (PNGU_DecodeToYCbYCr(ctx, imgProp.imgWidth, imgProp.imgHeight, xfb, 640 - imgProp.imgWidth) != PNGU_OK)
-			{
-				printf("\x1b[5;6H PNGU_DecodeToYCbYCr failed!\n");
-			}
-		}
-
-		PNGU_ReleaseImageContext(ctx);
-	}
-
-	int boot;
+	bool showMenu = false;
 	FILE * fp;
 	int size;
 
-	while (1)
+	// Check if the user is trying to override the GBI version
+	PAD_ScanPads();
+
+	if (PAD_ButtonsHeld(0) & PAD_BUTTON_Y)
 	{
-		boot = 0;
-		
-		//printf("\x1b[5;6H");
+		showMenu = true;
 
-		//printf("\x1b[6;6H Default  : %s\n\n\n", (strlen(def_title) > 1) ? def_title : def);
+		printf("\x1b[5;6H gbiloader r1 by Adam Zey");
 
-		PAD_ScanPads();
+		printf("\x1b[7;6H To select the version of GBI to boot, please press one");
+		printf("\x1b[8;6H of the following buttons. Your preference will be saved.");
 
-		int buttonsDown = PAD_ButtonsDown(0);
+		printf("\x1b[10;6H Press A for GBI");
+		printf("\x1b[11;6H Press B for GBI-LL");
+		printf("\x1b[12;6H Press X for GBI-ULL\n");
+	}
 
-		if (buttonsDown & PAD_TRIGGER_Z) {
-			//strcpy(bootpath, buttonZT);
-			boot = 1;
-			printf("\x1b[5;6H BOOTING...\n");
-		}
-
-		//if (timer >= 0) { if (difftime(now, boottime) >= timer) boot = 1; }
-
-		if (boot)
+	while (true)
+	{
+		if (showMenu)
 		{
+			PAD_ScanPads();
+
+			int buttonsDown = PAD_ButtonsDown(0);
+
+			if (buttonsDown & PAD_BUTTON_A)
+			{
+				dol_def = dol_gbi;
+				img_def = img_gbi;
+
+				showMenu = false;
+				RenderPNG();
+			}
+			else if (buttonsDown & PAD_BUTTON_B)
+			{
+				dol_def = dol_gbi_ll;
+				img_def = img_gbi_ll;
+
+				showMenu = false;
+				RenderPNG();
+			}
+			else if (buttonsDown & PAD_BUTTON_X)
+			{
+				dol_def = dol_gbi_ull;
+				img_def = img_gbi_ull;
+
+				showMenu = false;
+				RenderPNG();
+			}
+		}
+		else
+		{
+			printf("\x1b[5;6H BOOTING...\n"); // TODO: Remove me
+
+			char bootpath[256];
+			char clipath[256];
+			strcpy(bootpath, dol_def);
+
 			fp = fopen(bootpath, "rb");
 
 			if (fp == NULL)
