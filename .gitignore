@@ -6,6 +6,7 @@ x64/
 gbiloader.VC.db
 gbiloader.VC.VC.opendb
 gbiloader.vcxproj.user
+gbiloader.elf.map
 
 
 *.dol
