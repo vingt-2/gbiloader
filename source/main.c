@@ -123,10 +123,16 @@ static int initFAT()
 
 //Config
 
-char image_gbi[] = "fat:/gbiloader/gbi.png";
-char image_gbi_ll[] = "fat:/gbiloader/gbi-ll.png";
-char image_gbi_ull[] = "fat:/gbiloader/gbi-ull.png";
-char def[256] = "fat:/gbi-ll.dol";
+char img_gbi[] = "fat:/gbiloader/gbi.png";
+char img_gbi_ll[] = "fat:/gbiloader/gbi-ll.png";
+char img_gbi_ull[] = "fat:/gbiloader/gbi-ull.png";
+
+char dol_gbi[] = "fat:/gbiloader/gbi.dol";
+char dol_gbi_ll[] = "fat:/gbiloader/gbi-ll.dol";
+char dol_gbi_ull[] = "fat:/gbiloader/gbi-ull.dol";
+
+char *img_def = img_gbi_ll;
+char *dol_def = dol_gbi_ll;
 char vid_mode[256] = "auto";
 
 int readparseconf(char * config)
@@ -157,8 +163,21 @@ int readparseconf(char * config)
 
 			if (strncmp("DEFAULT=", mystring, 8) == 0)
 			{
-				strcpy(def, mystring + 8);
-				def[strcspn(def, "\r\n")] = 0;
+				if (strncmp(mystring + 8, "gbi-ull", 7) == 0)
+				{
+					dol_def = dol_gbi_ull;
+					img_def = img_gbi_ull;
+				}
+				else if (strncmp(mystring + 8, "gbi-ll", 6) == 0)
+				{
+					dol_def = dol_gbi_ll;
+					img_def = img_gbi_ll;
+				}
+				else if (strncmp(mystring + 8, "gbi", 3) == 0)
+				{
+					dol_def = dol_gbi;
+					img_def = img_gbi;
+				}
 			}
 
 			if (strncmp("VIDEO_MODE=", mystring, 11) == 0)
@@ -238,16 +257,16 @@ int main(int argc, char *argv[])
 
 	char bootpath[256];
 	char clipath[256];
-	strcpy(bootpath, def);
+	strcpy(bootpath, dol_def);
 
 	VIDEO_ClearFrameBuffer(rmode, xfb, COLOR_BLACK);
 
 	PNGUPROP imgProp;
 	IMGCTX ctx;
 
-	if (!(ctx = PNGU_SelectImageFromDevice(image_gbi_ll))) // TODO: Make this dynamic
+	if (!(ctx = PNGU_SelectImageFromDevice(img_def)))
 	{
-		if (strlen(image_gbi_ll) > 0)
+		if (strlen(img_def) > 0)
 		{
 			printf("PNGU_SelectFileFromDevice failed!\n");
 		}
@@ -288,6 +307,7 @@ int main(int argc, char *argv[])
 		if (buttonsDown & PAD_TRIGGER_Z) {
 			//strcpy(bootpath, buttonZT);
 			boot = 1;
+			printf("BOOTING...\n");
 		}
 
 		//if (timer >= 0) { if (difftime(now, boottime) >= timer) boot = 1; }
@@ -298,47 +318,13 @@ int main(int argc, char *argv[])
 
 			if (fp == NULL)
 			{
-				printf("\x1b[22;5H                                                                   ");
-				printf("\x1b[22;6H");
-				printf("Can't open %s, booting default dol.", bootpath);
-
-				strcpy(bootpath, def);
-
-				fp = fopen(bootpath, "rb");
-
-				if (fp == NULL)
-				{
-					if (strcmp(bootpath, "fat:/autoexec.dol") != 0)
-					{
-						printf("\x1b[23;5H                                                                   ");
-						printf("\x1b[23;6H");
-						printf("Can't open %s, booting autoexec.dol.", bootpath);
-						sprintf(bootpath, "fat:/autoexec.dol");
-
-						fp = fopen(bootpath, "rb");
-
-						if (fp == NULL)
-						{
-							printf("\x1b[24;5H                                                                   ");
-							printf("\x1b[25;5H                                                                   ");
-							printf("\x1b[24;6H");
-							printf("Failed to open autoexec.dol. It would be wise to have it at your\x1b[25;6Hsdcard root. Please, check your configuration file.\n\n");
-							printf("\x1b[26;5H                                                                   ");
-							printf("\x1b[27;5H                                                                   ");
-							printf("\x1b[27;6H");
-						}
-					}
-					else
-					{
-						printf("\x1b[23;5H                                                                   ");
-						printf("\x1b[24;5H                                                                   ");
-						printf("\x1b[23;6H");
-						printf("Failed to open autoexec.dol. It would be wise to have it at your\x1b[24;6Hsdcard root. Please, check your configuration file.\n\n");
-						printf("\x1b[25;5H                                                                   ");
-						printf("\x1b[26;5H                                                                   ");
-						printf("\x1b[26;6H");
-					}
-				}
+				printf("\x1b[23;5H                                                                   ");
+				printf("\x1b[24;5H                                                                   ");
+				printf("\x1b[23;6H");
+				printf("Failed to open %s. Check config file and folder structure.\n\n", dol_def);
+				printf("\x1b[25;5H                                                                   ");
+				printf("\x1b[26;5H                                                                   ");
+				printf("\x1b[26;6H");
 			}
 
 			if (fp != NULL)
