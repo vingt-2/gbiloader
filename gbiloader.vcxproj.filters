@@ -18,5 +18,8 @@
     <ClCompile Include="source\main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="images.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

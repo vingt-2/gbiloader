@@ -8,6 +8,7 @@
 #include <sdcard/gcsd.h>
 #include "aram/sidestep.h"
 #include "libpng/pngu/pngu.h"
+#include "images.h"
 
 #define CONFIGFILE "fat:/gbiloader/gbiloader.ini"
 #define MAX_CONFIG_LINE 256
@@ -20,10 +21,10 @@ void Initialise()
 	VIDEO_Init();
 	PAD_Init();
 
-	//rmode = VIDEO_GetPreferredMode(NULL);
-
-	// Temporarily override with 480i (make this configurable later)
-	rmode = &TVNtsc480Int;
+	if (rmode == NULL)
+	{
+		rmode = VIDEO_GetPreferredMode(NULL);
+	}
 
 	xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
 	console_init(xfb, 20, 20, rmode->fbWidth, rmode->xfbHeight, rmode->fbWidth * VI_DISPLAY_PIX_SZ);
@@ -123,17 +124,13 @@ static int initFAT()
 
 //Config
 
-char img_gbi[] = "fat:/gbiloader/gbi.png";
-char img_gbi_ll[] = "fat:/gbiloader/gbi-ll.png";
-char img_gbi_ull[] = "fat:/gbiloader/gbi-ull.png";
-
 char dol_gbi[] = "fat:/gbiloader/gbi.dol";
 char dol_gbi_ll[] = "fat:/gbiloader/gbi-ll.dol";
 char dol_gbi_ull[] = "fat:/gbiloader/gbi-ull.dol";
 
-char *img_def = img_gbi_ll;
+unsigned char *img_def = gbi_ll_png;
+unsigned char *img_def_240 = gbi_ll_240_png;
 char *dol_def = dol_gbi_ll;
-char vid_mode[256] = "auto";
 
 int readparseconf(char * config)
 {
@@ -144,7 +141,7 @@ int readparseconf(char * config)
 
 	if (pFile == NULL)
 	{
-		printf("\x1b[5;6H Error opening %s\n", config);
+		printf("\x1b[4;6H Error opening %s\n", config);
 		return -1;
 	}
 	else
@@ -166,24 +163,53 @@ int readparseconf(char * config)
 				if (strncmp(mystring + 8, "gbi-ull", 7) == 0)
 				{
 					dol_def = dol_gbi_ull;
-					img_def = img_gbi_ull;
+					img_def = gbi_ull_png;
+					img_def_240 = gbi_ull_240_png;
 				}
 				else if (strncmp(mystring + 8, "gbi-ll", 6) == 0)
 				{
 					dol_def = dol_gbi_ll;
-					img_def = img_gbi_ll;
+					img_def = gbi_ll_png;
+					img_def_240 = gbi_ll_240_png;
 				}
 				else if (strncmp(mystring + 8, "gbi", 3) == 0)
 				{
 					dol_def = dol_gbi;
-					img_def = img_gbi;
+					img_def = gbi_png;
+					img_def_240 = gbi_240_png;
 				}
 			}
 
 			if (strncmp("VIDEO_MODE=", mystring, 11) == 0)
 			{
-				strcpy(vid_mode, mystring + 11);
-				vid_mode[strcspn(vid_mode, "\r\n")] = 0;
+				if (strncmp(mystring + 11, "auto", 4) == 0)
+				{
+					rmode = VIDEO_GetPreferredMode(NULL);
+				}
+				else if (strncmp(mystring + 11, "240p", 4) == 0)
+				{
+					rmode = &TVNtsc240Ds;
+				}
+				else if (strncmp(mystring + 11, "480i", 4) == 0)
+				{
+					rmode = &TVNtsc480Int;
+				}
+				else if (strncmp(mystring + 11, "480p", 4) == 0)
+				{
+					rmode = &TVNtsc480Prog;
+				}
+				else if (strncmp(mystring + 11, "264p", 4) == 0)
+				{
+					rmode = &TVPal264Ds;
+				}
+				else if (strncmp(mystring + 11, "528i", 4) == 0)
+				{
+					rmode = &TVPal528Int;
+				}
+				else if (strncmp(mystring + 11, "576p", 4) == 0)
+				{
+					rmode = &TVPal576ProgScale;
+				}
 			}
 		}
 
@@ -193,24 +219,10 @@ int readparseconf(char * config)
 	return 0;
 }
 
-void waitA()
+void HaltLoop()
 {
-	printf("\x1b[5;6H Press A to continue\n");
-
 	while (1)
 	{
-		PAD_ScanPads();
-
-		if (PAD_ButtonsDown(0) & PAD_BUTTON_A)
-		{
-			while (PAD_ButtonsHeld(0) & PAD_BUTTON_A)
-			{
-				PAD_ScanPads();
-			}
-
-			break;
-		}
-
 		VIDEO_WaitVSync();
 	}
 }
@@ -222,25 +234,39 @@ void RenderPNG()
 	PNGUPROP imgProp;
 	IMGCTX ctx;
 
-	if (!(ctx = PNGU_SelectImageFromDevice(img_def)))
+	unsigned char *img_splash;
+
+	if (rmode->xfbHeight >= 480)
 	{
-		if (strlen(img_def) > 0)
-		{
-			printf("\x1b[5;6H PNGU_SelectFileFromDevice failed!\n");
-		}
+		img_splash = img_def;
+	}
+	else
+	{
+		img_splash = img_def_240;
+	}
+	
+	if (!(ctx = PNGU_SelectImageFromBuffer(img_splash)))
+	{
+		printf("\x1b[4;6H PNGU_SelectImageFromBuffer failed!\n");
 	}
 	else
 	{
 		if (PNGU_GetImageProperties(ctx, &imgProp) != PNGU_OK)
 		{
-			printf("\x1b[5;6H PNGU_GetImageProperties failed!\n");
+			printf("\x1b[4;6H PNGU_GetImageProperties failed!\n");
 		}
 		else
 		{
-			if (PNGU_DecodeToYCbYCr(ctx, imgProp.imgWidth, imgProp.imgHeight, xfb, 640 - imgProp.imgWidth) != PNGU_OK)
+			if (PNGU_DECODE_TO_COORDS_YCbYCr(ctx, (rmode->fbWidth / 2) - (imgProp.imgWidth / 2), (rmode->xfbHeight / 2) - (imgProp.imgHeight / 2), imgProp.imgWidth, imgProp.imgHeight, rmode->fbWidth, rmode->xfbHeight, xfb) != PNGU_OK)
+			{
+				printf("\x1b[4;6H PNGU_DecodeToYCbYCr failed!\n");
+				HaltLoop();
+			}
+
+			/*if (PNGU_DecodeToYCbYCr(ctx, imgProp.imgWidth, imgProp.imgHeight, xfb, 640 - imgProp.imgWidth) != PNGU_OK)
 			{
 				printf("\x1b[5;6H PNGU_DecodeToYCbYCr failed!\n");
-			}
+			}*/
 		}
 
 		PNGU_ReleaseImageContext(ctx);
@@ -250,42 +276,21 @@ void RenderPNG()
 
 int main(int argc, char *argv[])
 {
-	Initialise();
-
-	int have_sd = 0;
-
-	while (1)
+	if (initFAT() == 0)
 	{
-		have_sd = initFAT();
-
-		if (!have_sd)
-		{
-			while (1)
-			{
-				printf("\x1b[4;5H");
-				printf("Couldn't mount SD Gecko. Insert one now and press A.\n");
-
-				PAD_ScanPads();
-
-				if (PAD_ButtonsDown(0) & PAD_BUTTON_A)
-				{
-					break;
-				}
-
-				VIDEO_WaitVSync();
-			}
-		}
-
-		if (have_sd)
-		{
-			break;
-		}
+		Initialise();
+		printf("\x1b[4;6H Unable to access SD card.");
+		HaltLoop();
 	}
 
 	if (readparseconf(CONFIGFILE) < 0)
 	{
-		waitA();
+		Initialise();
+		printf("\x1b[4;6H Unable to read config file.");
+		HaltLoop();
 	}
+
+	Initialise();
 
 	RenderPNG();
 
@@ -300,14 +305,15 @@ int main(int argc, char *argv[])
 	{
 		showMenu = true;
 
-		printf("\x1b[5;6H gbiloader r1 by Adam Zey");
+		printf("\x1b[4;6H gbiloader r1 by Adam Zey");
 
-		printf("\x1b[7;6H To select the version of GBI to boot, please press one");
-		printf("\x1b[8;6H of the following buttons. Your preference will be saved.");
+		printf("\x1b[6;6H To select the version of GBI to boot, please press one");
+		printf("\x1b[7;6H of the following buttons. Your preference will be saved.");
 
-		printf("\x1b[10;6H Press A for GBI");
-		printf("\x1b[11;6H Press B for GBI-LL");
-		printf("\x1b[12;6H Press X for GBI-ULL\n");
+		printf("\x1b[9;6H Press A for GBI");
+		printf("\x1b[10;6H Press B for GBI-LL");
+		printf("\x1b[11;6H Press X for GBI-ULL\n");
+		//printf("\x1b[11;6H Press L for Swiss\n");
 	}
 
 	while (true)
@@ -321,7 +327,8 @@ int main(int argc, char *argv[])
 			if (buttonsDown & PAD_BUTTON_A)
 			{
 				dol_def = dol_gbi;
-				img_def = img_gbi;
+				img_def = gbi_png;
+				img_def_240 = gbi_240_png;
 
 				showMenu = false;
 				RenderPNG();
@@ -329,7 +336,8 @@ int main(int argc, char *argv[])
 			else if (buttonsDown & PAD_BUTTON_B)
 			{
 				dol_def = dol_gbi_ll;
-				img_def = img_gbi_ll;
+				img_def = gbi_ll_png;
+				img_def_240 = gbi_ll_240_png;
 
 				showMenu = false;
 				RenderPNG();
@@ -337,7 +345,8 @@ int main(int argc, char *argv[])
 			else if (buttonsDown & PAD_BUTTON_X)
 			{
 				dol_def = dol_gbi_ull;
-				img_def = img_gbi_ull;
+				img_def = gbi_ull_png;
+				img_def_240 = gbi_ull_240_png;
 
 				showMenu = false;
 				RenderPNG();
@@ -345,8 +354,6 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-			printf("\x1b[5;6H BOOTING...\n"); // TODO: Remove me
-
 			char bootpath[256];
 			char clipath[256];
 			strcpy(bootpath, dol_def);
@@ -355,13 +362,7 @@ int main(int argc, char *argv[])
 
 			if (fp == NULL)
 			{
-				printf("\x1b[23;5H                                                                   ");
-				printf("\x1b[24;5H                                                                   ");
-				printf("\x1b[23;6H");
-				printf("Failed to open %s. Check config file and folder structure.\n\n", dol_def);
-				printf("\x1b[25;5H                                                                   ");
-				printf("\x1b[26;5H                                                                   ");
-				printf("\x1b[26;6H");
+				printf("\x1b[4;6H Failed to open %s. Check config file and folder structure.\n\n", dol_def);
 			}
 
 			if (fp != NULL)
@@ -455,7 +456,7 @@ int main(int argc, char *argv[])
 
 					//We shouldn't reach this point
 					if (dol != NULL) free(dol);
-					printf("\x1b[5;6H Not a valid dol File! ");
+					printf("\x1b[4;6H Not a valid dol File! ");
 				}
 
 				fclose(fp);
