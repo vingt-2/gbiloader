@@ -7,14 +7,42 @@
 #include <fat.h>
 #include <sdcard/gcsd.h>
 #include "aram/sidestep.h"
-#include "libpng/pngu/pngu.h"
-#include "images.h"
 
 #define CONFIGFILE "fat:/gbiloader/gbiloader.ini"
 #define MAX_CONFIG_LINE 256
 
 static void *xfb = NULL;
 static GXRModeObj *rmode = NULL;
+
+//Config
+
+int verbosity_level = 100;
+
+//char *dol_def = dol_gbi_ll;
+
+typedef enum { GBI, GBI_LL, GBI_ULL, SWISS } dol_type;
+
+dol_type boot_dol = GBI;
+
+int console_line = 2;
+
+void consolef(int verbosity, char *format, char *param)
+{
+	if (verbosity <= verbosity_level)
+	{
+		char output[128] = "\x1b[%d;6H";
+		strcat(output, format),
+
+		kprintf(output, console_line, param);
+
+		console_line++;
+	}
+}
+
+void console(int verbosity, char *format)
+{
+	consolef(verbosity, format, "");
+}
 
 void Initialise()
 {
@@ -50,7 +78,6 @@ static int initFAT()
 	for (i = 0; i < 10; i++)
 	{
 		ret = CARD_ProbeEx(CARD_SLOTA, &memsize, &sectsize);
-		//printf("Ret: %d", ret);
 
 		if (ret == CARD_ERROR_WRONGDEVICE)
 		{
@@ -70,7 +97,7 @@ static int initFAT()
 
 			if (ret == CARD_ERROR_WRONGDEVICE)
 			{
-				//printf ("SDGecko detected...\n\n");
+				//kprintf ("SDGecko detected...\n\n");
 				break;
 			}
 		}
@@ -79,13 +106,13 @@ static int initFAT()
 
 		if (!__io_gcsda.isInserted())
 		{
-			//printf ("No SD Gecko inserted! Using embedded config.\n\n");
+			//kprintf ("No SD Gecko inserted! Using embedded config.\n\n");
 			return 0;
 		}
 
 		if (!fatMountSimple("fat", &__io_gcsda))
 		{
-			//printf("Error Mounting SD fat! Using embedded config.\n\n");
+			//kprintf("Error Mounting SD fat! Using embedded config.\n\n");
 			return 0;
 		}
 	}
@@ -108,13 +135,13 @@ static int initFAT()
 
 		if (!__io_gcsdb.isInserted())
 		{
-			//printf ("No SD Gecko inserted! Using default config.\n\n");
+			//kprintf ("No SD Gecko inserted! Using default config.\n\n");
 			return 0;
 		}
 
 		if (!fatMountSimple("fat", &__io_gcsdb))
 		{
-			//printf("Error Mounting SD fat! Using default config.\n\n");
+			//kprintf("Error Mounting SD fat! Using default config.\n\n");
 			return 0;
 		}
 	}
@@ -122,17 +149,7 @@ static int initFAT()
 	return 1;
 }
 
-//Config
-
-char dol_gbi[] = "fat:/gbiloader/gbi.dol";
-char dol_gbi_ll[] = "fat:/gbiloader/gbi-ll.dol";
-char dol_gbi_ull[] = "fat:/gbiloader/gbi-ull.dol";
-
-unsigned char *img_def = gbi_ll_png;
-unsigned char *img_def_240 = gbi_ll_240_png;
-char *dol_def = dol_gbi_ll;
-
-int readparseconf(char * config)
+int readparseconf(char *config)
 {
 	FILE * pFile;
 	char mystring[MAX_CONFIG_LINE];
@@ -141,7 +158,7 @@ int readparseconf(char * config)
 
 	if (pFile == NULL)
 	{
-		printf("\x1b[4;6H Error opening %s\n", config);
+		consolef(0, "Error opening %s\n", config);
 		return -1;
 	}
 	else
@@ -162,21 +179,16 @@ int readparseconf(char * config)
 			{
 				if (strncmp(mystring + 8, "gbi-ull", 7) == 0)
 				{
-					dol_def = dol_gbi_ull;
-					img_def = gbi_ull_png;
-					img_def_240 = gbi_ull_240_png;
+					boot_dol = GBI_ULL;
 				}
 				else if (strncmp(mystring + 8, "gbi-ll", 6) == 0)
 				{
-					dol_def = dol_gbi_ll;
-					img_def = gbi_ll_png;
-					img_def_240 = gbi_ll_240_png;
+					boot_dol = GBI_LL;
+
 				}
 				else if (strncmp(mystring + 8, "gbi", 3) == 0)
 				{
-					dol_def = dol_gbi;
-					img_def = gbi_png;
-					img_def_240 = gbi_240_png;
+					boot_dol = GBI;
 				}
 			}
 
@@ -227,72 +239,26 @@ void HaltLoop()
 	}
 }
 
-void RenderPNG()
-{
-	VIDEO_ClearFrameBuffer(rmode, xfb, COLOR_BLACK);
-
-	PNGUPROP imgProp;
-	IMGCTX ctx;
-
-	unsigned char *img_splash;
-
-	if (rmode->xfbHeight >= 480)
-	{
-		img_splash = img_def;
-	}
-	else
-	{
-		img_splash = img_def_240;
-	}
-	
-	if (!(ctx = PNGU_SelectImageFromBuffer(img_splash)))
-	{
-		printf("\x1b[4;6H PNGU_SelectImageFromBuffer failed!\n");
-	}
-	else
-	{
-		if (PNGU_GetImageProperties(ctx, &imgProp) != PNGU_OK)
-		{
-			printf("\x1b[4;6H PNGU_GetImageProperties failed!\n");
-		}
-		else
-		{
-			if (PNGU_DECODE_TO_COORDS_YCbYCr(ctx, (rmode->fbWidth / 2) - (imgProp.imgWidth / 2), (rmode->xfbHeight / 2) - (imgProp.imgHeight / 2), imgProp.imgWidth, imgProp.imgHeight, rmode->fbWidth, rmode->xfbHeight, xfb) != PNGU_OK)
-			{
-				printf("\x1b[4;6H PNGU_DecodeToYCbYCr failed!\n");
-				HaltLoop();
-			}
-
-			/*if (PNGU_DecodeToYCbYCr(ctx, imgProp.imgWidth, imgProp.imgHeight, xfb, 640 - imgProp.imgWidth) != PNGU_OK)
-			{
-				printf("\x1b[5;6H PNGU_DecodeToYCbYCr failed!\n");
-			}*/
-		}
-
-		PNGU_ReleaseImageContext(ctx);
-	}
-}
-
-
 int main(int argc, char *argv[])
 {
 	if (initFAT() == 0)
 	{
 		Initialise();
-		printf("\x1b[4;6H Unable to access SD card.");
+		console(0, "Unable to access SD card.");
 		HaltLoop();
 	}
 
 	if (readparseconf(CONFIGFILE) < 0)
 	{
 		Initialise();
-		printf("\x1b[4;6H Unable to read config file.");
+		console(0, "Unable to read config file.");
 		HaltLoop();
 	}
 
 	Initialise();
 
-	RenderPNG();
+	console(1, "gbiloader r1 by Adam Zey");
+	console(1, "");
 
 	bool showMenu = false;
 	FILE * fp;
@@ -305,15 +271,13 @@ int main(int argc, char *argv[])
 	{
 		showMenu = true;
 
-		printf("\x1b[4;6H gbiloader r1 by Adam Zey");
-
-		printf("\x1b[6;6H To select the version of GBI to boot, please press one");
-		printf("\x1b[7;6H of the following buttons. Your preference will be saved.");
-
-		printf("\x1b[9;6H Press A for GBI");
-		printf("\x1b[10;6H Press B for GBI-LL");
-		printf("\x1b[11;6H Press X for GBI-ULL\n");
-		//printf("\x1b[11;6H Press L for Swiss\n");
+		console(1, "To select the version of GBI to boot, please press one");
+		console(1, "of the following buttons. Your preference will be saved.");
+		console(1, "");
+		console(1, "Press A for GBI");
+		console(1, "Press B for GBI-LL");
+		console(1, "Press X for GBI-ULL\n");
+		//console(1, "Press L for Swiss\n");
 	}
 
 	while (true)
@@ -326,43 +290,48 @@ int main(int argc, char *argv[])
 
 			if (buttonsDown & PAD_BUTTON_A)
 			{
-				dol_def = dol_gbi;
-				img_def = gbi_png;
-				img_def_240 = gbi_240_png;
+				boot_dol = GBI;
 
 				showMenu = false;
-				RenderPNG();
 			}
 			else if (buttonsDown & PAD_BUTTON_B)
 			{
-				dol_def = dol_gbi_ll;
-				img_def = gbi_ll_png;
-				img_def_240 = gbi_ll_240_png;
+				boot_dol = GBI_LL;
 
 				showMenu = false;
-				RenderPNG();
 			}
 			else if (buttonsDown & PAD_BUTTON_X)
 			{
-				dol_def = dol_gbi_ull;
-				img_def = gbi_ull_png;
-				img_def_240 = gbi_ull_240_png;
+				boot_dol = GBI_ULL;
 
 				showMenu = false;
-				RenderPNG();
 			}
 		}
 		else
 		{
 			char bootpath[256];
 			char clipath[256];
-			strcpy(bootpath, dol_def);
+
+			switch (boot_dol)
+			{
+				case GBI:
+					strcpy(bootpath, "fat:/gbiloader/gbi.dol");
+					break;
+				case GBI_LL:
+					strcpy(bootpath, "fat:/gbiloader/gbi-ll.dol");
+					break;
+				case GBI_ULL:
+					strcpy(bootpath, "fat:/gbiloader/gbi-ull.dol");
+					break;
+			}
+
+			consolef(1, "Loading %s ...", bootpath);
 
 			fp = fopen(bootpath, "rb");
 
 			if (fp == NULL)
 			{
-				printf("\x1b[4;6H Failed to open %s. Check config file and folder structure.\n\n", dol_def);
+				consolef(0, "Failed to open %s. Check config file and folder structure.\n\n", bootpath);
 			}
 
 			if (fp != NULL)
@@ -456,7 +425,7 @@ int main(int argc, char *argv[])
 
 					//We shouldn't reach this point
 					if (dol != NULL) free(dol);
-					printf("\x1b[4;6H Not a valid dol File! ");
+					console(0, "Not a valid dol File! ");
 				}
 
 				fclose(fp);
