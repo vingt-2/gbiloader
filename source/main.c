@@ -8,20 +8,17 @@
 #include <sdcard/gcsd.h>
 #include "aram/sidestep.h"
 
-#define CONFIGFILE "fat:/gbiloader/gbiloader.ini"
+#define CONFIG_FILE "fat:/gbiloader/gbiloader.ini"
+#define BOOTPREF_FILE "fat:/gbiloader/boot.prf"
 #define MAX_CONFIG_LINE 256
 
 static void *xfb = NULL;
 static GXRModeObj *rmode = NULL;
 
-//Config
-
-int verbosity_level = 100;
-
-//char *dol_def = dol_gbi_ll;
-
 typedef enum { GBI, GBI_LL, GBI_ULL, SWISS } dol_type;
 
+//Config
+int verbosity_level = 100;
 dol_type boot_dol = GBI;
 
 int console_line = 2;
@@ -42,6 +39,37 @@ void consolef(int verbosity, char *format, char *param)
 void console(int verbosity, char *format)
 {
 	consolef(verbosity, format, "");
+}
+
+void set_boot_pref(char *data)
+{
+	FILE *bootpref = fopen(BOOTPREF_FILE, "w");
+
+	if (bootpref != NULL)
+	{
+		fputs(data, bootpref);
+		fclose(bootpref);
+	}
+	else
+	{
+		console(0, "Can't write boot pref. Check SD lock.");
+	}
+}
+
+// Note: this function only reads the first line of a file.
+void get_boot_pref(char *bootpref_content)
+{
+	FILE *bootpref = fopen(BOOTPREF_FILE, "r");
+
+	if (bootpref != NULL)
+	{
+		fgets(bootpref_content, 127, bootpref);
+		fclose(bootpref);
+	}
+	else
+	{
+		strcpy(bootpref_content, "");
+	}
 }
 
 void Initialise()
@@ -97,7 +125,6 @@ static int initFAT()
 
 			if (ret == CARD_ERROR_WRONGDEVICE)
 			{
-				//kprintf ("SDGecko detected...\n\n");
 				break;
 			}
 		}
@@ -106,13 +133,11 @@ static int initFAT()
 
 		if (!__io_gcsda.isInserted())
 		{
-			//kprintf ("No SD Gecko inserted! Using embedded config.\n\n");
 			return 0;
 		}
 
 		if (!fatMountSimple("fat", &__io_gcsda))
 		{
-			//kprintf("Error Mounting SD fat! Using embedded config.\n\n");
 			return 0;
 		}
 	}
@@ -135,13 +160,11 @@ static int initFAT()
 
 		if (!__io_gcsdb.isInserted())
 		{
-			//kprintf ("No SD Gecko inserted! Using default config.\n\n");
 			return 0;
 		}
 
 		if (!fatMountSimple("fat", &__io_gcsdb))
 		{
-			//kprintf("Error Mounting SD fat! Using default config.\n\n");
 			return 0;
 		}
 	}
@@ -151,7 +174,7 @@ static int initFAT()
 
 int readparseconf(char *config)
 {
-	FILE * pFile;
+	FILE *pFile;
 	char mystring[MAX_CONFIG_LINE];
 
 	pFile = fopen(config, "r");
@@ -173,23 +196,6 @@ int readparseconf(char *config)
 			if (mystring[0] == '#' || mystring[0] == '\n' || mystring[0] == '\r')
 			{
 				continue;
-			}
-
-			if (strncmp("DEFAULT=", mystring, 8) == 0)
-			{
-				if (strncmp(mystring + 8, "gbi-ull", 7) == 0)
-				{
-					boot_dol = GBI_ULL;
-				}
-				else if (strncmp(mystring + 8, "gbi-ll", 6) == 0)
-				{
-					boot_dol = GBI_LL;
-
-				}
-				else if (strncmp(mystring + 8, "gbi", 3) == 0)
-				{
-					boot_dol = GBI;
-				}
 			}
 
 			if (strncmp("VIDEO_MODE=", mystring, 11) == 0)
@@ -226,6 +232,29 @@ int readparseconf(char *config)
 		}
 
 		fclose(pFile);
+
+		char bootpref[128];
+		get_boot_pref(bootpref);
+
+		if (bootpref != NULL)
+		{
+			if (strcmp(bootpref, "gbi") == 0)
+			{
+				boot_dol = GBI;
+			}
+			else if (strcmp(bootpref, "gbi-ll") == 0)
+			{
+				boot_dol = GBI_LL;
+			}
+			else if (strcmp(bootpref, "gbi-ull") == 0)
+			{
+				boot_dol = GBI_ULL;
+			}
+			else if (strcmp(bootpref, "swiss") == 0)
+			{
+				boot_dol = SWISS;
+			}
+		}
 	}
 
 	return 0;
@@ -248,7 +277,7 @@ int main(int argc, char *argv[])
 		HaltLoop();
 	}
 
-	if (readparseconf(CONFIGFILE) < 0)
+	if (readparseconf(CONFIG_FILE) < 0)
 	{
 		Initialise();
 		console(0, "Unable to read config file.");
@@ -276,8 +305,8 @@ int main(int argc, char *argv[])
 		console(1, "");
 		console(1, "Press A for GBI");
 		console(1, "Press B for GBI-LL");
-		console(1, "Press X for GBI-ULL\n");
-		//console(1, "Press L for Swiss\n");
+		console(1, "Press X for GBI-ULL");
+		console(1, "Press L for Swiss");
 	}
 
 	while (true)
@@ -291,18 +320,28 @@ int main(int argc, char *argv[])
 			if (buttonsDown & PAD_BUTTON_A)
 			{
 				boot_dol = GBI;
+				set_boot_pref("gbi");
 
 				showMenu = false;
 			}
 			else if (buttonsDown & PAD_BUTTON_B)
 			{
 				boot_dol = GBI_LL;
+				set_boot_pref("gbi-ll");
 
 				showMenu = false;
 			}
 			else if (buttonsDown & PAD_BUTTON_X)
 			{
 				boot_dol = GBI_ULL;
+				set_boot_pref("gbi-ull");
+
+				showMenu = false;
+			}
+			else if (buttonsDown & PAD_TRIGGER_L)
+			{
+				boot_dol = SWISS;
+				set_boot_pref("swiss");
 
 				showMenu = false;
 			}
@@ -322,6 +361,9 @@ int main(int argc, char *argv[])
 					break;
 				case GBI_ULL:
 					strcpy(bootpath, "fat:/gbiloader/gbi-ull.dol");
+					break;
+				case SWISS:
+					strcpy(bootpath, "fat:/gbiloader/swiss.dol");
 					break;
 			}
 
