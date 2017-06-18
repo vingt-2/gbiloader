@@ -18,7 +18,7 @@ static GXRModeObj *rmode = NULL;
 typedef enum { GBI, GBI_LL, GBI_ULL, SWISS } dol_type;
 
 //Config
-int verbosity_level = 100;
+int verbosity_level = 1;
 dol_type boot_dol = GBI;
 
 int console_line = 2;
@@ -72,6 +72,17 @@ void get_boot_pref(char *bootpref_content)
 	}
 }
 
+bool CheckResetGamecube()
+{
+	if (SYS_ResetButtonDown())
+	{
+		SYS_ResetSystem(SYS_RESTART, 0, 0);
+		return true;
+	}
+
+	return false;
+}
+
 void Initialise()
 {
 	VIDEO_Init();
@@ -89,12 +100,10 @@ void Initialise()
 	VIDEO_SetNextFramebuffer(xfb);
 	VIDEO_SetBlack(FALSE);
 	VIDEO_Flush();
-	VIDEO_WaitVSync();
 
-	if (rmode->viTVMode&VI_NON_INTERLACE)
-	{
-		VIDEO_WaitVSync();
-	}
+	// Controller will show no input on first post-init frame if we don't wait two vsyncs
+	VIDEO_WaitVSync();
+	VIDEO_WaitVSync();
 }
 
 static int initFAT()
@@ -229,6 +238,18 @@ int readparseconf(char *config)
 					rmode = &TVPal576ProgScale;
 				}
 			}
+
+			if (strncmp("VERBOSE=", mystring, 8) == 0)
+			{
+				if (strncmp(mystring + 8, "1", 1) == 0)
+				{
+					verbosity_level = 1;
+				}
+				else if (strncmp(mystring + 8, "0", 1) == 0)
+				{
+					verbosity_level = 0;
+				}
+			}
 		}
 
 		fclose(pFile);
@@ -260,10 +281,15 @@ int readparseconf(char *config)
 	return 0;
 }
 
-void HaltLoop()
+int HaltLoop()
 {
 	while (1)
 	{
+		if (CheckResetGamecube())
+		{
+			return 0;
+		}
+
 		VIDEO_WaitVSync();
 	}
 }
@@ -274,14 +300,14 @@ int main(int argc, char *argv[])
 	{
 		Initialise();
 		console(0, "Unable to access SD card.");
-		HaltLoop();
+		return HaltLoop();
 	}
 
 	if (readparseconf(CONFIG_FILE) < 0)
 	{
 		Initialise();
 		console(0, "Unable to read config file.");
-		HaltLoop();
+		return HaltLoop();
 	}
 
 	Initialise();
@@ -295,6 +321,9 @@ int main(int argc, char *argv[])
 
 	// Check if the user is trying to override the GBI version
 	PAD_ScanPads();
+	
+	//// kprintf("\x1b[%d;6HButton held state: %d", console_line, PAD_ButtonsHeld(0));
+	//// console_line++;
 
 	if (PAD_ButtonsHeld(0) & PAD_BUTTON_Y)
 	{
@@ -313,6 +342,11 @@ int main(int argc, char *argv[])
 	{
 		if (showMenu)
 		{
+			if (CheckResetGamecube())
+			{
+				return 0;
+			}
+
 			PAD_ScanPads();
 
 			int buttonsDown = PAD_ButtonsDown(0);
@@ -373,7 +407,9 @@ int main(int argc, char *argv[])
 
 			if (fp == NULL)
 			{
-				consolef(0, "Failed to open %s. Check config file and folder structure.\n\n", bootpath);
+				consolef(0, "Failed to open %s.", bootpath);
+				console(0, "Check config file and folder structure.\n\n");
+				return HaltLoop();
 			}
 
 			if (fp != NULL)
@@ -468,6 +504,7 @@ int main(int argc, char *argv[])
 					//We shouldn't reach this point
 					if (dol != NULL) free(dol);
 					console(0, "Not a valid dol File! ");
+					return HaltLoop();
 				}
 
 				fclose(fp);
