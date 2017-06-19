@@ -1,2 +1,2 @@
---format=pal
---scan-mode=interlace
+--format=ntsc
+--scan-mode=non-interlace
