@@ -1,7 +1,7 @@
 # gbiloader
 Tool to automate launching extrem's Game Boy Interface software.
 
-Copyright 2017 by Adam Zey
+_Copyright 2017 by Adam Zey_
 
 This is a fork of Dolaunch by suloku, specifically the BrosexecConf tool. It's heavily modified to target GBI specifically.
 
@@ -29,7 +29,7 @@ gbiloader requires an SDML or SDGecko as well as some way of loading homebrew so
 
 - gbiloader will automatically boot the last thing it loaded (gbi-ll by default). Hold down the "Y" button before gbiloader starts to show a menu to select what it should boot. When you select the option, it will save your preference to your SD card (so the SD must be writable) for the next time, and then boot what you selected.
 
-- gbiloader can load all three versions of GBI as well as Swiss. BE WARNED THAT IF YOU USE SWISS TO AUTOBOOT GBILOADER, YOU CANNOT USE GBILOADER TO LOAD SWISS. IT WILL ENTER AN INFINITE LOOP UNTIL YOU ACCESS THE GBILOADER MENU TO STOP IT. I'm considering including a custom build of Swiss that has auto-boot disabled in order to work around this limitation.
+- gbiloader can load all three versions of GBI as well as Swiss. **BE WARNED THAT IF YOU USE SWISS TO AUTOBOOT GBILOADER, YOU CANNOT USE GBILOADER TO LOAD SWISS. IT WILL ENTER AN INFINITE LOOP UNTIL YOU ACCESS THE GBILOADER MENU TO STOP IT.** I'm considering including a custom build of Swiss that has auto-boot disabled in order to work around this limitation.
 
 
 ### More information
@@ -41,5 +41,5 @@ For the gbiloader source code and latest builds, visit <https://github.com/Guspa
 
 ### Change history
 
-r1
+**r1**
 - Initial release. Includes GBI 20170410 and Swiss r387
