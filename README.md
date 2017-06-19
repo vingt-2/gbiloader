@@ -12,12 +12,12 @@ Each version of GBI can have their own .CLI file associated with it, so you can 
 By default, it will load GBI-LL. Hold Y while it starts to get a menu to select which version of GBI to load.
 
 
-## Requirements
+### Requirements
 
 gbiloader requires an SDML or SDGecko as well as some way of loading homebrew software.
 
 
-## Instructions
+### Instructions
 
 - Place the "gbiloader" folder on your SD card. All three versions of GBI and a copy of Swiss are included, you can update them to newer versions as you see fit.
 
@@ -32,14 +32,14 @@ gbiloader requires an SDML or SDGecko as well as some way of loading homebrew so
 - gbiloader can load all three versions of GBI as well as Swiss. BE WARNED THAT IF YOU USE SWISS TO AUTOBOOT GBILOADER, YOU CANNOT USE GBILOADER TO LOAD SWISS. IT WILL ENTER AN INFINITE LOOP UNTIL YOU ACCESS THE GBILOADER MENU TO STOP IT. I'm considering including a custom build of Swiss that has auto-boot disabled in order to work around this limitation.
 
 
-## More information
+### More information
 
 For more information on GBI configuration, see the DCP files in the official GBI release, and the official thread here: <https://www.gc-forever.com/forums/viewtopic.php?f=37&t=2782>
 
 For the gbiloader source code and latest builds, visit <https://github.com/Guspaz/gbiloader>
 
 
-## Change history
+### Change history
 
 r1
 - Initial release. Includes GBI 20170410 and Swiss r387
