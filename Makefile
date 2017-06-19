@@ -17,7 +17,7 @@ include $(DEVKITPPC)/gamecube_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	gbiloader
 BUILD		:=	build
-SOURCES		:=	source source/aram source/libpng source/libpng/pngu
+SOURCES		:=	source source/aram
 DATA		:=	data
 INCLUDES	:=	source
 
@@ -33,7 +33,7 @@ LDFLAGS	= -g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--section-start,.init=0x80
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:= -lpng -lz -logc -lfat -lm
+LIBS	:= -logc -lfat -lm
 
 
 #---------------------------------------------------------------------------------
