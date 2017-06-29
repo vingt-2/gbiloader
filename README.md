@@ -7,7 +7,7 @@ This is a fork of Dolaunch by suloku, specifically the BrosexecConf tool. It's h
 
 This tool allowas you to automatically start GBI when powering on the gamecube, and to support command-line arguments while doing so. Currently most people who want to start GBI automatically either boot GBI directly, or set Swiss to autostart GBI, but neither of these options support passing commandline arguments to GBI.
 
-Each version of GBI can have their own .CLI file associated with it, so you can have different settings for each version.
+Each version of GBI (except ULL) can have their own .CLI file associated with it, so you can have different settings for each version.
 
 By default, it will load GBI-LL. Hold Y while it starts to get a menu to select which version of GBI to load.
 
@@ -29,7 +29,7 @@ gbiloader requires an SDML or SDGecko as well as some way of loading homebrew so
 
 - gbiloader will automatically boot the last thing it loaded (gbi-ll by default). Hold down the "Y" button before gbiloader starts to show a menu to select what it should boot. When you select the option, it will save your preference to your SD card (so the SD must be writable) for the next time, and then boot what you selected.
 
-- gbiloader can load all three versions of GBI as well as Swiss. **BE WARNED THAT IF YOU USE SWISS TO AUTOBOOT GBILOADER, YOU CANNOT USE GBILOADER TO LOAD SWISS. IT WILL ENTER AN INFINITE LOOP UNTIL YOU ACCESS THE GBILOADER MENU TO STOP IT.** I'm considering including a custom build of Swiss that has auto-boot disabled in order to work around this limitation.
+- gbiloader can load all three versions of GBI as well as Swiss. **BE WARNED THAT THE VERSION OF SWISS INCLUDED IS AN UNOFFICIAL CUSTOM BUILD WITH AUTO-LOAD (boot.dol) DISABLED. USE AT YOUR OWN RISK.** I hope to propose a patch to the official Swiss in the future to remove the need for a custom version.
 
 
 ### More information
@@ -40,6 +40,11 @@ For the gbiloader source code and latest builds, visit <https://github.com/Guspa
 
 
 ### Change history
+
+**r2**
+- Update included GBI to 20170624
+- Switch build from dollz3 to dolxz (smaller gbiloader DOL file)
+- Updated included Swiss to an unofficial custom build of r414 that has auto-load disabled for boot.dol
 
 **r1**
 - Initial release. Includes GBI 20170410 and Swiss r387

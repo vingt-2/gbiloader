@@ -2,5 +2,5 @@ rm *.elf *.dol *.gci
 
 make clean
 make
-dollz3.exe gbiloader.dol boot.dol
+dolxz.exe gbiloader.dol boot.dol -cube
 dol2gci.exe boot.dol boot.gci

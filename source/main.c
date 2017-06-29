@@ -312,7 +312,7 @@ int main(int argc, char *argv[])
 
 	Initialise();
 
-	console(1, "gbiloader r1 by Adam Zey");
+	console(1, "gbiloader r2 by Adam Zey");
 	console(1, "");
 
 	bool showMenu = false;
