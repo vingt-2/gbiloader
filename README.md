@@ -5,7 +5,7 @@ _Copyright 2017 by Adam Zey_
 
 This is a fork of Dolaunch by suloku, specifically the BrosexecConf tool. It's heavily modified to target GBI specifically.
 
-This tool allowas you to automatically start GBI when powering on the gamecube, and to support command-line arguments while doing so. Currently most people who want to start GBI automatically either boot GBI directly, or set Swiss to autostart GBI, but neither of these options support passing commandline arguments to GBI.
+This tool allows you to automatically start GBI when powering on the gamecube, and to support command-line arguments while doing so. Currently most people who want to start GBI automatically either boot GBI directly, or set Swiss to autostart GBI, but neither of these options support passing commandline arguments to GBI.
 
 Each version of GBI (except ULL) can have their own .CLI file associated with it, so you can have different settings for each version.
 
