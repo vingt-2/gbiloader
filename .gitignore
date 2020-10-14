@@ -9,8 +9,6 @@ gbiloader.vcxproj.user
 gbiloader.elf.map
 
 
-*.dol
-*.elf
 *.o
 *.gci
 *.suo
